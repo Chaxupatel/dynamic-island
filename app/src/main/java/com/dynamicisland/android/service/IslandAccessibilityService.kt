@@ -1,9 +1,11 @@
 package com.dynamicisland.android.service
 
 import android.accessibilityservice.AccessibilityService
+import android.content.ComponentName
 import android.content.res.Configuration
 import android.graphics.PixelFormat
 import android.os.Build
+import android.service.notification.NotificationListenerService
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.MotionEvent
@@ -20,6 +22,7 @@ import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.dynamicisland.android.DynamicIslandApp
 import com.dynamicisland.android.core.IslandStateCoordinator
+import com.dynamicisland.android.core.PermissionHelper
 import com.dynamicisland.android.model.IslandFeatureKind
 import com.dynamicisland.android.model.IslandUiState
 import com.dynamicisland.android.model.IslandVisualMode
@@ -64,6 +67,14 @@ class IslandAccessibilityService : AccessibilityService() {
 
         systemEventsMonitor = SystemEventsMonitor(this, coordinator).apply { start() }
         attachOverlayWindow()
+
+        if (PermissionHelper.isNotificationListenerEnabled(this)) {
+            runCatching {
+                NotificationListenerService.requestRebind(
+                    ComponentName(this, IslandNotificationListenerService::class.java)
+                )
+            }
+        }
 
         stateCollectJob = serviceScope.launch {
             coordinator.uiState.collect { state ->

@@ -753,7 +753,7 @@
     // 1. Check if a local APK is reachable (e.g., when opened via file:// or previewed from repo root)
     if (window.location.protocol === "file:" && localBtn) {
       localBtn.href = "../app/build/outputs/apk/debug/app-debug.apk";
-      localBtn.setAttribute("download", "dynamic-island-v1.0.1-debug.apk");
+      localBtn.setAttribute("download", "dynamic-island-v1.0.2-debug.apk");
       localBtn.style.display = "inline-flex";
       localBtn.textContent = "Direct Local APK (app-debug.apk)";
     } else {
@@ -770,7 +770,7 @@
             const mb = bytes > 0 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : "Local APK";
             if (localBtn) {
               localBtn.href = candidate;
-              localBtn.setAttribute("download", "dynamic-island-v1.0.1-debug.apk");
+              localBtn.setAttribute("download", "dynamic-island-v1.0.2-debug.apk");
               localBtn.style.display = "inline-flex";
               localBtn.textContent = `Direct Local APK (${mb})`;
             }

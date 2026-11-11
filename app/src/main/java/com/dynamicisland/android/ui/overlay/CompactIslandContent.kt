@@ -53,48 +53,56 @@ import com.dynamicisland.android.ui.theme.IslandTheme
 import kotlinx.coroutines.delay
 
 @Composable
-fun CompactIslandContent(state: IslandUiState) {
+fun CompactIslandContent(
+    state: IslandUiState,
+    modifier: Modifier = Modifier
+) {
     val palette = IslandTheme.palette
-    when (state.mode) {
-        IslandVisualMode.IDLE -> {
-            if (palette.showTelemetryPip) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Box(
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        when (state.mode) {
+            IslandVisualMode.IDLE -> {
+                if (palette.showTelemetryPip) {
+                    Row(
                         modifier = Modifier
-                            .size(width = 16.dp, height = 3.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(palette.islandTextMuted.copy(alpha = 0.45f))
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(5.dp)
-                            .clip(CircleShape)
-                            .background(palette.primaryAccent)
-                    )
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(width = 16.dp, height = 3.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(palette.islandTextMuted.copy(alpha = 0.45f))
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(5.dp)
+                                .clip(CircleShape)
+                                .background(palette.primaryAccent)
+                        )
+                    }
+                } else {
+                    Box(modifier = Modifier.fillMaxWidth())
                 }
-            } else {
-                Box(modifier = Modifier.fillMaxWidth())
             }
-        }
-        IslandVisualMode.POPUP -> {
-            PopupCapsuleContent(activity = state.primary)
-        }
-        IslandVisualMode.COMPACT -> {
-            val primary = state.primary
-            val secondary = state.secondary
-            if (primary != null && secondary != null) {
-                SplitCapsuleContent(primary = primary, secondary = secondary)
-            } else if (primary != null) {
-                SingleCompactCapsuleContent(activity = primary)
+            IslandVisualMode.POPUP -> {
+                PopupCapsuleContent(activity = state.primary)
             }
+            IslandVisualMode.COMPACT -> {
+                val primary = state.primary
+                val secondary = state.secondary
+                if (primary != null && secondary != null) {
+                    SplitCapsuleContent(primary = primary, secondary = secondary)
+                } else if (primary != null) {
+                    SingleCompactCapsuleContent(activity = primary)
+                }
+            }
+            else -> Unit
         }
-        else -> Unit
     }
 }
 
@@ -465,11 +473,11 @@ private fun PopupCapsuleContent(activity: IslandActivity?) {
             }
 
             is IslandActivity.NotificationActivity -> {
-                val accent = if (activity.accentColor == 0xFF4F8CFF.toInt()) {
-                    palette.primaryAccent
-                } else {
-                    Color(activity.accentColor)
-                }
+                val accent = readableIslandAccent(
+                    rawColor = activity.accentColor,
+                    fallback = palette.primaryAccent,
+                    isLightSurface = palette.isLightTheme
+                )
                 val bmp = remember(activity.largeIcon, activity.appIcon) {
                     (activity.largeIcon ?: activity.appIcon)?.toSafeImageBitmap()
                 }

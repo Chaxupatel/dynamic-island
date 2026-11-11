@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.ColorUtils
 import com.dynamicisland.android.model.IslandActivity
 import com.dynamicisland.android.model.NotificationActionInfo
 import com.dynamicisland.android.model.RingerMode
@@ -71,7 +72,15 @@ fun sendRemoteInputReply(
             putCharSequence(remoteInput.resultKey, replyText.trim())
         }
         RemoteInput.addResultsToIntent(arrayOf(remoteInput), fillIn, bundle)
-        intent.send(context, 0, fillIn)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            val options = ActivityOptions.makeBasic()
+                .setPendingIntentBackgroundActivityStartMode(
+                    ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+                )
+            intent.send(context, 0, fillIn, null, null, null, options.toBundle())
+        } else {
+            intent.send(context, 0, fillIn)
+        }
         true
     }.getOrDefault(false)
 }
@@ -82,6 +91,27 @@ fun primaryPendingIntent(activity: IslandActivity?): PendingIntent? = when (acti
     is IslandActivity.CallActivity -> activity.contentIntent
     is IslandActivity.TimerActivity -> activity.contentIntent
     else -> null
+}
+
+/**
+ * Ensures notification brand colors (such as WhatsApp's dark teal-green) maintain
+ * crisp legibility on both dark and light island capsule surfaces.
+ */
+fun readableIslandAccent(
+    rawColor: Int,
+    fallback: Color,
+    isLightSurface: Boolean
+): Color {
+    if (rawColor == 0xFF4F8CFF.toInt() || rawColor == 0) return fallback
+    val hsl = FloatArray(3)
+    ColorUtils.colorToHSL(rawColor, hsl)
+    if (hsl[1] < 0.12f) return fallback
+    hsl[2] = if (isLightSurface) {
+        hsl[2].coerceIn(0.26f, 0.44f)
+    } else {
+        hsl[2].coerceIn(0.56f, 0.72f)
+    }
+    return Color(ColorUtils.HSLToColor(hsl))
 }
 
 fun activityAccentColor(activity: IslandActivity?, palette: IslandPalette): Color = when (activity) {
@@ -96,7 +126,7 @@ fun activityAccentColor(activity: IslandActivity?, palette: IslandPalette): Colo
         RingerMode.NORMAL -> palette.positiveAccent
     }
     is IslandActivity.NotificationActivity -> {
-        if (activity.accentColor == 0xFF4F8CFF.toInt()) palette.primaryAccent else Color(activity.accentColor)
+        readableIslandAccent(activity.accentColor, palette.primaryAccent, palette.isLightTheme)
     }
     null -> Color.Transparent
 }
@@ -123,6 +153,30 @@ fun AudioWaveformBars(
     barWidth: Dp = 2.4.dp,
     modifier: Modifier = Modifier
 ) {
+    val barBrush = Brush.verticalGradient(
+        colors = listOf(barColor, barColor.copy(alpha = 0.65f))
+    )
+
+    if (!isPlaying) {
+        Row(
+            modifier = modifier.height(maxHeight),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            for (index in 0 until 5) {
+                val fraction = 0.24f + (index % 3) * 0.1f
+                Box(
+                    modifier = Modifier
+                        .width(barWidth)
+                        .height(maxHeight * fraction)
+                        .clip(RoundedCornerShape(50))
+                        .background(barBrush)
+                )
+            }
+        }
+        return
+    }
+
     val transition = rememberInfiniteTransition(label = "waveform")
     val bars = listOf(
         transition.animateFloat(
@@ -172,22 +226,17 @@ fun AudioWaveformBars(
         )
     )
 
-    val barBrush = Brush.verticalGradient(
-        colors = listOf(barColor, barColor.copy(alpha = 0.65f))
-    )
-
     Row(
         modifier = modifier.height(maxHeight),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        bars.forEachIndexed { index, anim ->
+        bars.forEach { anim ->
             val fraction by anim
-            val effective = if (isPlaying) fraction else (0.24f + (index % 3) * 0.1f)
             Box(
                 modifier = Modifier
                     .width(barWidth)
-                    .height(maxHeight * effective)
+                    .height(maxHeight * fraction)
                     .clip(RoundedCornerShape(50))
                     .background(barBrush)
             )

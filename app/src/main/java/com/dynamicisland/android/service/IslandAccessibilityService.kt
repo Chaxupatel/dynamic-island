@@ -20,8 +20,10 @@ import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.dynamicisland.android.DynamicIslandApp
 import com.dynamicisland.android.core.IslandStateCoordinator
+import com.dynamicisland.android.model.IslandFeatureKind
 import com.dynamicisland.android.model.IslandUiState
 import com.dynamicisland.android.model.IslandVisualMode
+import com.dynamicisland.android.model.featureKind
 import com.dynamicisland.android.ui.overlay.DynamicIslandOverlay
 import com.dynamicisland.android.ui.theme.DynamicIslandTheme
 import kotlinx.coroutines.CoroutineScope
@@ -46,9 +48,11 @@ class IslandAccessibilityService : AccessibilityService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var stateCollectJob: Job? = null
     private var hideWindowJob: Job? = null
+    private var shrinkWindowJob: Job? = null
 
     private var lifecycleOwner: IslandLifecycleOwner? = null
     private var overlayView: FrameLayout? = null
+    private var composeView: ComposeView? = null
     private var layoutParams: WindowManager.LayoutParams? = null
 
     override fun onServiceConnected() {
@@ -81,6 +85,8 @@ class IslandAccessibilityService : AccessibilityService() {
 
     override fun onDestroy() {
         stateCollectJob?.cancel()
+        hideWindowJob?.cancel()
+        shrinkWindowJob?.cancel()
         serviceScope.cancel()
         if (::systemEventsMonitor.isInitialized) {
             systemEventsMonitor.stop()
@@ -105,7 +111,7 @@ class IslandAccessibilityService : AccessibilityService() {
         val params = createBaseLayoutParams(coordinator.uiState.value)
         layoutParams = params
 
-        val composeView = ComposeView(this).apply {
+        val compose = ComposeView(this).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 val state by coordinator.uiState.collectAsState()
@@ -117,15 +123,24 @@ class IslandAccessibilityService : AccessibilityService() {
                 }
             }
         }
+        composeView = compose
 
         val container = object : FrameLayout(this) {
             override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-                if (ev.action == MotionEvent.ACTION_OUTSIDE &&
-                    coordinator.uiState.value.mode == IslandVisualMode.EXPANDED &&
-                    !coordinator.isShowingPinnedPreview()
-                ) {
+                val isExpanded = coordinator.uiState.value.mode == IslandVisualMode.EXPANDED
+                val canAutoCollapse = isExpanded && !coordinator.isShowingPinnedPreview()
+                if (canAutoCollapse && ev.actionMasked == MotionEvent.ACTION_OUTSIDE) {
                     coordinator.collapse()
                     return true
+                }
+                if (canAutoCollapse && ev.actionMasked == MotionEvent.ACTION_DOWN) {
+                    val cv = composeView
+                    if (cv != null &&
+                        (ev.x < cv.left || ev.x > cv.right || ev.y < cv.top || ev.y > cv.bottom)
+                    ) {
+                        coordinator.collapse()
+                        return true
+                    }
                 }
                 return super.dispatchTouchEvent(ev)
             }
@@ -134,10 +149,11 @@ class IslandAccessibilityService : AccessibilityService() {
             setViewTreeViewModelStoreOwner(owner)
             setViewTreeSavedStateRegistryOwner(owner)
             addView(
-                composeView,
+                compose,
                 FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    Gravity.TOP or Gravity.CENTER_HORIZONTAL
                 )
             )
         }
@@ -152,6 +168,7 @@ class IslandAccessibilityService : AccessibilityService() {
         lifecycleOwner?.onStop()
         lifecycleOwner?.onDestroy()
         lifecycleOwner = null
+        composeView = null
         overlayView = null
         layoutParams = null
     }
@@ -201,10 +218,12 @@ class IslandAccessibilityService : AccessibilityService() {
         val nextFlags = computeFlags(state)
 
         if (state.mode == IslandVisualMode.HIDDEN) {
+            shrinkWindowJob?.cancel()
+            shrinkWindowJob = null
             if (hideWindowJob?.isActive != true && view.visibility != android.view.View.GONE) {
                 hideWindowJob = serviceScope.launch {
                     // Wait for the Compose scale+fade exit animation before collapsing the window surface
-                    delay(210L)
+                    delay(190L)
                     if (coordinator.uiState.value.mode == IslandVisualMode.HIDDEN) {
                         view.visibility = android.view.View.GONE
                         params.width = 0
@@ -224,13 +243,45 @@ class IslandAccessibilityService : AccessibilityService() {
         if (view.visibility != android.view.View.VISIBLE) {
             view.visibility = android.view.View.VISIBLE
         }
-        if (params.width != ViewGroup.LayoutParams.WRAP_CONTENT ||
-            params.height != ViewGroup.LayoutParams.WRAP_CONTENT
-        ) {
-            params.width = ViewGroup.LayoutParams.WRAP_CONTENT
-            params.height = ViewGroup.LayoutParams.WRAP_CONTENT
-            needsRelayout = true
+
+        if (state.mode == IslandVisualMode.EXPANDED) {
+            shrinkWindowJob?.cancel()
+            shrinkWindowJob = null
+
+            val activeKind = state.primary?.featureKind() ?: IslandFeatureKind.IDLE
+            val expandedW = state.settings.sizeFor(activeKind).expandedWidthDp.coerceAtLeast(300f) + 32f
+            val targetW = dpToPx(expandedW)
+            val targetH = dpToPx(416f)
+            if (params.width != targetW || params.height != targetH) {
+                params.width = targetW
+                params.height = targetH
+                needsRelayout = true
+            }
+        } else {
+            val isStillExpandedWindow = params.width > 0 || params.height > 0
+            if (isStillExpandedWindow) {
+                if (shrinkWindowJob?.isActive != true) {
+                    shrinkWindowJob = serviceScope.launch {
+                        // Keep fixed window bounds while the collapse spring finishes to avoid per-frame relayout jank
+                        delay(260L)
+                        val latest = coordinator.uiState.value
+                        if (latest.mode != IslandVisualMode.EXPANDED && latest.mode != IslandVisualMode.HIDDEN) {
+                            params.width = ViewGroup.LayoutParams.WRAP_CONTENT
+                            params.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                            params.flags = computeFlags(latest)
+                            runCatching { windowManager.updateViewLayout(view, params) }
+                        }
+                    }
+                }
+            } else if (params.width != ViewGroup.LayoutParams.WRAP_CONTENT ||
+                params.height != ViewGroup.LayoutParams.WRAP_CONTENT
+            ) {
+                params.width = ViewGroup.LayoutParams.WRAP_CONTENT
+                params.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                needsRelayout = true
+            }
         }
+
         if (params.x != nextX || params.y != nextY || params.flags != nextFlags) {
             params.x = nextX
             params.y = nextY

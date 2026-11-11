@@ -354,9 +354,9 @@
                     <input class="exp-reply-input" id="sim-reply-input" type="text" placeholder="Type quick reply..." />
                     <button class="exp-action-chip primary" id="sim-send-reply">Send</button>
                   </div>`
-                : `<div style="display:flex;gap:8px;">
+                : `<div style="display:flex;flex-wrap:wrap;gap:8px;">
                     <button class="exp-action-chip primary" id="sim-open-reply">Quick Reply</button>
-                    <button class="exp-action-chip" id="sim-mark-read">Mark Read</button>
+                    <button class="exp-action-chip" id="sim-mark-read">Mark as read</button>
                   </div>`
             }
           </div>`;
@@ -753,7 +753,7 @@
     // 1. Check if a local APK is reachable (e.g., when opened via file:// or previewed from repo root)
     if (window.location.protocol === "file:" && localBtn) {
       localBtn.href = "../app/build/outputs/apk/debug/app-debug.apk";
-      localBtn.setAttribute("download", "dynamic-island-v1.0.0-debug.apk");
+      localBtn.setAttribute("download", "dynamic-island-v1.0.1-debug.apk");
       localBtn.style.display = "inline-flex";
       localBtn.textContent = "Direct Local APK (app-debug.apk)";
     } else {
@@ -770,7 +770,7 @@
             const mb = bytes > 0 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : "Local APK";
             if (localBtn) {
               localBtn.href = candidate;
-              localBtn.setAttribute("download", "dynamic-island-v1.0.0-debug.apk");
+              localBtn.setAttribute("download", "dynamic-island-v1.0.1-debug.apk");
               localBtn.style.display = "inline-flex";
               localBtn.textContent = `Direct Local APK (${mb})`;
             }
@@ -804,6 +804,13 @@
           btn.href = apkAsset.browser_download_url;
           btn.setAttribute("download", apkAsset.name);
         });
+        if (heroBtn && release.tag_name) {
+          heroBtn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M5 20h14v-2H5v2zm14-9h-4V3H9v8H5l7 7 7-7z"/>
+            </svg>
+            Download APK (${release.tag_name})`;
+        }
         if (primaryBtn) {
           primaryBtn.innerHTML = `
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5 20h14v-2H5v2zm14-9h-4V3H9v8H5l7 7 7-7z"/></svg>

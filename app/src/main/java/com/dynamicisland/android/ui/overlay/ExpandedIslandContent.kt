@@ -1,6 +1,8 @@
 package com.dynamicisland.android.ui.overlay
 
 import android.os.SystemClock
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,8 +13,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -21,8 +26,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.material.icons.automirrored.rounded.Reply
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.BatteryChargingFull
 import androidx.compose.material.icons.rounded.Bluetooth
@@ -60,13 +68,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -83,12 +95,18 @@ import kotlinx.coroutines.delay
 @Composable
 fun ExpandedIslandContent(
     state: IslandUiState,
-    coordinator: IslandStateCoordinator
+    coordinator: IslandStateCoordinator,
+    modifier: Modifier = Modifier
 ) {
     val primary = state.primary ?: return
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
+            .animateContentSize(
+                animationSpec = spring(
+                    dampingRatio = 0.84f,
+                    stiffness = 620f
+                )
+            )
             .padding(horizontal = 18.dp, vertical = 16.dp)
     ) {
         when (primary) {
@@ -321,6 +339,7 @@ private fun ExpandedMediaCard(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ExpandedNotificationCard(
     notif: IslandActivity.NotificationActivity,
@@ -328,11 +347,11 @@ private fun ExpandedNotificationCard(
     coordinator: IslandStateCoordinator
 ) {
     val palette = IslandTheme.palette
-    val accent = if (notif.accentColor == 0xFF4F8CFF.toInt()) {
-        palette.primaryAccent
-    } else {
-        Color(notif.accentColor)
-    }
+    val accent = readableIslandAccent(
+        rawColor = notif.accentColor,
+        fallback = palette.primaryAccent,
+        isLightSurface = palette.isLightTheme
+    )
     val context = LocalContext.current
     val avatar = remember(notif.largeIcon, notif.appIcon) {
         (notif.largeIcon ?: notif.appIcon)?.toSafeImageBitmap()
@@ -342,9 +361,33 @@ private fun ExpandedNotificationCard(
     }
     var activeReplyAction by remember(notif.id) { mutableStateOf<NotificationActionInfo?>(null) }
     var replyText by remember(notif.id) { mutableStateOf("") }
+    val replyFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(isInlineReplyOpen, activeReplyAction) {
+        if (isInlineReplyOpen && activeReplyAction != null) {
+            runCatching { replyFocusRequester.requestFocus() }
+        }
+    }
+
+    fun submitReply() {
+        val sent = activeReplyAction?.let {
+            sendRemoteInputReply(context, it, replyText)
+        } ?: false
+        if (sent) {
+            replyText = ""
+            activeReplyAction = null
+            coordinator.setInlineReplyOpen(false)
+            coordinator.collapse()
+        }
+    }
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = notif.contentIntent != null) {
+                launchPendingIntent(context, notif.contentIntent)
+                coordinator.collapse()
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(modifier = Modifier.size(44.dp)) {
@@ -460,31 +503,29 @@ private fun ExpandedNotificationCard(
                 onValueChange = { replyText = it },
                 placeholder = { Text("Reply...", color = palette.islandTextMuted, fontSize = 13.sp) },
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                keyboardActions = KeyboardActions(onSend = { submitReply() }),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = palette.islandTextPrimary,
                     unfocusedTextColor = palette.islandTextPrimary,
-                    focusedBorderColor = palette.primaryAccent,
+                    focusedBorderColor = accent,
                     unfocusedBorderColor = palette.islandTextPrimary.copy(alpha = 0.16f)
                 ),
                 shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(replyFocusRequester)
             )
             FilledTonalIconButton(
-                onClick = {
-                    val sent = activeReplyAction?.let {
-                        sendRemoteInputReply(context, it, replyText)
-                    } ?: false
-                    if (sent) {
-                        replyText = ""
-                        activeReplyAction = null
-                        coordinator.setInlineReplyOpen(false)
-                        coordinator.collapse()
-                    }
-                },
+                onClick = { submitReply() },
+                enabled = replyText.isNotBlank(),
                 colors = IconButtonDefaults.filledTonalIconButtonColors(
-                    containerColor = palette.primaryAccent,
-                    contentColor = Color.White
-                )
+                    containerColor = accent,
+                    contentColor = Color.White,
+                    disabledContainerColor = palette.islandSurfaceChip,
+                    disabledContentColor = palette.islandTextMuted
+                ),
+                modifier = Modifier.size(44.dp)
             ) {
                 Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = "Send")
             }
@@ -497,36 +538,68 @@ private fun ExpandedNotificationCard(
         notif.actions.sortedByDescending { it.hasRemoteInput }.take(2)
     }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        displayActions.forEach { action ->
+    val renderNotificationAction: @Composable (NotificationActionInfo, Modifier) -> Unit =
+        { action, itemModifier ->
             ActionPillChip(
                 label = action.title,
                 accentColor = accent,
+                icon = if (action.hasRemoteInput) Icons.AutoMirrored.Rounded.Reply else null,
                 onClick = {
                     if (action.hasRemoteInput) {
-                        activeReplyAction = action
-                        coordinator.setInlineReplyOpen(true)
+                        if (isInlineReplyOpen && activeReplyAction == action) {
+                            coordinator.setInlineReplyOpen(false)
+                        } else {
+                            activeReplyAction = action
+                            coordinator.setInlineReplyOpen(true)
+                        }
                     } else {
                         launchPendingIntent(context, action.actionIntent)
                         coordinator.collapse()
                     }
                 },
+                modifier = itemModifier
+            )
+        }
+
+    if (displayActions.size <= 1) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            displayActions.forEach { action ->
+                renderNotificationAction(action, Modifier.weight(1f))
+            }
+            ActionPillChip(
+                label = "Open",
+                accentColor = palette.islandTextPrimary,
+                icon = Icons.AutoMirrored.Rounded.OpenInNew,
+                onClick = {
+                    launchPendingIntent(context, notif.contentIntent)
+                    coordinator.collapse()
+                },
                 modifier = Modifier.weight(1f)
             )
         }
-        ActionPillChip(
-            label = "Open",
-            accentColor = palette.islandTextPrimary,
-            icon = Icons.AutoMirrored.Rounded.OpenInNew,
-            onClick = {
-                launchPendingIntent(context, notif.contentIntent)
-                coordinator.collapse()
-            },
-            modifier = Modifier.weight(1f)
-        )
+    } else {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            displayActions.forEach { action ->
+                renderNotificationAction(action, Modifier.defaultMinSize(minWidth = 68.dp))
+            }
+            ActionPillChip(
+                label = "Open",
+                accentColor = palette.islandTextPrimary,
+                icon = Icons.AutoMirrored.Rounded.OpenInNew,
+                onClick = {
+                    launchPendingIntent(context, notif.contentIntent)
+                    coordinator.collapse()
+                },
+                modifier = Modifier.defaultMinSize(minWidth = 68.dp)
+            )
+        }
     }
 }
 
@@ -884,6 +957,7 @@ private fun ActionPillChip(
     accentColor: Color,
     icon: ImageVector? = null,
     onClick: () -> Unit,
+    horizontalPadding: Dp = 12.dp,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -895,7 +969,7 @@ private fun ActionPillChip(
             .border(0.5.dp, accentColor.copy(alpha = 0.28f), RoundedCornerShape(14.dp))
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp),
+            modifier = Modifier.padding(horizontal = horizontalPadding),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {

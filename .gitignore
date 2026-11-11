@@ -1,0 +1,33 @@
+# Gradle & build outputs
+.gradle/
+build/
+app/build/
+*/build/
+
+# Kotlin & IDE
+.kotlin/
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Local environment config (contains machine-specific SDK path)
+local.properties
+
+# Android artifacts
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+captures/
+.cxx/
+proguard/
+
+# Keystores & secrets
+*.jks
+*.keystore
+
+# macOS / OS metadata
+.DS_Store
+Thumbs.db

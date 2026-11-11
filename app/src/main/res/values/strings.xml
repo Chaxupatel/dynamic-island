@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Dynamic Island</string>
+    <string name="accessibility_service_label">Dynamic Island Overlay</string>
+    <string name="accessibility_service_description">Draws the Dynamic Island capsule over your status bar and camera cutout. Does not read screen content or passwords.</string>
+    <string name="notification_listener_label">Dynamic Island Notifications &amp; Media</string>
+</resources>
+

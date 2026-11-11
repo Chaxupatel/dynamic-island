@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="obsidian">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dynamic Island for Android — Adaptive Cutout Overlay &amp; Live Activities</title>
+  <meta
+    name="description"
+    content="An adaptive, cutout-aware Dynamic Island experience for Android built with Jetpack Compose, Accessibility Overlays, 3 synchronized themes, per-feature cutout calibration, and live activities."
+  />
+  <meta name="theme-color" content="#06070B" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ambient-backdrop" aria-hidden="true"></div>
+
+  <!-- Navigation -->
+  <header class="site-header">
+    <div class="container nav-inner">
+      <a href="#top" class="brand">
+        <span class="brand-pill" aria-hidden="true">
+          <span class="brand-dot"></span>
+          <span class="brand-wave"></span>
+        </span>
+        <span class="brand-text">Dynamic Island</span>
+        <span class="brand-badge">Android</span>
+      </a>
+
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="#themes">Themes</a>
+        <a href="#features">Features</a>
+        <a href="#calibration">Calibration</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#download">Download APK</a>
+      </nav>
+
+      <div class="nav-actions">
+        <div class="theme-switcher-mini" role="group" aria-label="Switch app theme">
+          <button class="theme-pill-btn active" type="button" data-set-theme="obsidian" aria-pressed="true" title="Obsidian Glass">
+            <span class="swatch-dot" style="background:#4C8DFF;"></span>
+            <span class="theme-name">Obsidian</span>
+          </button>
+          <button class="theme-pill-btn" type="button" data-set-theme="alabaster" aria-pressed="false" title="Alabaster Gold">
+            <span class="swatch-dot" style="background:#C86327;"></span>
+            <span class="theme-name">Alabaster</span>
+          </button>
+          <button class="theme-pill-btn" type="button" data-set-theme="monolith" aria-pressed="false" title="Monolith Carbon">
+            <span class="swatch-dot" style="background:#FF2E4D;"></span>
+            <span class="theme-name">Monolith</span>
+          </button>
+        </div>
+
+        <a
+          class="btn btn-secondary btn-sm"
+          href="https://github.com/Chaxupatel/dynamic-island"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14 0 1.54-.01 2.79-.01 3.17 0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- Hero + Interactive Dynamic Island Simulator -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-card">
+          <div>
+            <div class="status-chip">
+              <span class="status-dot" aria-hidden="true"></span>
+              Active Over Status Bar · Android 8.0 – 15 (API 26–35)
+            </div>
+
+            <h1 class="hero-title">
+              Dynamic Island <br />
+              <span class="hero-accent">Built for Android.</span>
+            </h1>
+
+            <p class="hero-desc">
+              A fluid, spring-animated capsule drawn directly over your status bar and camera cutout.
+              Unifies live notifications with inline reply, MediaSession music visualizer, calls &amp;
+              timers in split-pill mode, charging &amp; Bluetooth popups, and 3 synchronized UI themes.
+            </p>
+
+            <div class="hero-cta-row">
+              <a
+                id="hero-download-btn"
+                class="btn btn-positive"
+                href="#download"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M5 20h14v-2H5v2zm14-9h-4V3H9v8H5l7 7 7-7z"/>
+                </svg>
+                Download APK (v1.0.0)
+              </a>
+
+              <a
+                class="btn btn-secondary"
+                href="https://github.com/Chaxupatel/dynamic-island"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14 0 1.54-.01 2.79-.01 3.17 0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/>
+                </svg>
+                View on GitHub
+              </a>
+            </div>
+
+            <div class="hero-meta-pills">
+              <span class="meta-pill">Kotlin 2.0.21</span>
+              <span class="meta-pill">Jetpack Compose + Material 3</span>
+              <span class="meta-pill">DataStore Persisted</span>
+              <span class="meta-pill">Open Source · com.dynamicisland.android</span>
+            </div>
+          </div>
+
+          <!-- Interactive Live Preview Stage (Mirrors HomeScreen.kt) -->
+          <div class="simulator-panel">
+            <div class="phone-stage">
+              <div class="stage-statusbar tnum">
+                <span>9:42</span>
+                <span class="stage-status-icons" aria-hidden="true">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M2 22h20V2L2 22z"/></svg>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 18c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm-4.9-2.3l1.4 1.4C9.4 16.4 10.6 16 12 16s2.6.4 3.5 1.1l1.4-1.4C15.6 14.6 13.9 14 12 14s-3.6.6-4.9 1.7zm-2.8-2.8l1.4 1.4C7.3 12.9 9.5 12 12 12s4.7.9 6.3 2.3l1.4-1.4C17.7 11.1 15 10 12 10s-5.7 1.1-7.7 2.9z"/></svg>
+                </span>
+              </div>
+
+              <div class="stage-island-wrap">
+                <div
+                  id="sim-capsule"
+                  class="island-capsule"
+                  role="button"
+                  tabindex="0"
+                  aria-label="Interactive Dynamic Island preview capsule"
+                ></div>
+              </div>
+
+              <div id="sim-hint" class="stage-hint">
+                Tap capsule to expand · Try Dual Split-Pill or Calibration sliders below
+              </div>
+            </div>
+
+            <div class="preview-tiles-grid" role="group" aria-label="Trigger preview activity">
+              <button class="preview-tile" type="button" data-preview-feature="NOTIFICATION">
+                <span class="tile-icon-dot" style="background:color-mix(in srgb, var(--primary) 18%, transparent);color:var(--primary);">●</span>
+                Message
+              </button>
+              <button class="preview-tile active" type="button" data-preview-feature="MEDIA">
+                <span class="tile-icon-dot" style="background:color-mix(in srgb, var(--secondary) 18%, transparent);color:var(--secondary);">♫</span>
+                Music
+              </button>
+              <button class="preview-tile" type="button" data-preview-feature="CHARGING">
+                <span class="tile-icon-dot" style="background:color-mix(in srgb, var(--positive) 18%, transparent);color:var(--positive);">⚡</span>
+                Charging
+              </button>
+              <button class="preview-tile" type="button" data-preview-feature="BLUETOOTH">
+                <span class="tile-icon-dot" style="background:color-mix(in srgb, var(--violet) 18%, transparent);color:var(--violet);">🎧</span>
+                Bluetooth
+              </button>
+              <button class="preview-tile" type="button" data-preview-feature="TIMER">
+                <span class="tile-icon-dot" style="background:color-mix(in srgb, var(--warning) 18%, transparent);color:var(--warning);">⏱</span>
+                Timer
+              </button>
+              <button class="preview-tile" type="button" data-preview-feature="CALL">
+                <span class="tile-icon-dot" style="background:color-mix(in srgb, var(--positive) 18%, transparent);color:var(--positive);">📞</span>
+                Call
+              </button>
+              <button class="preview-tile" type="button" data-preview-feature="RINGER">
+                <span class="tile-icon-dot" style="background:color-mix(in srgb, var(--danger) 18%, transparent);color:var(--danger);">🔕</span>
+                Silent
+              </button>
+              <button class="preview-tile" type="button" data-preview-feature="MEDIA" data-split-mode="true">
+                <span class="tile-icon-dot" style="background:color-mix(in srgb, var(--warning) 18%, transparent);color:var(--warning);">◫</span>
+                Split-Pill
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 Synchronized Themes -->
+    <section id="themes" class="section">
+      <div class="container">
+        <div class="section-header">
+          <span class="overline">VISUAL IDENTITY</span>
+          <h2 class="section-title">3 Synchronized App &amp; Island Themes</h2>
+          <p class="section-subtitle">
+            Selecting a theme transforms both the control dashboard and the live status-bar Dynamic Island
+            overlay in real time—try clicking any theme card below to transform this entire website to match.
+          </p>
+        </div>
+
+        <div class="themes-grid">
+          <!-- Obsidian Glass -->
+          <article class="glass-card theme-card active" data-theme-card="obsidian">
+            <div class="theme-mini-canvas mini-canvas-obsidian">
+              <div class="mini-island-pill" style="background:#000000;border:1px solid rgba(255,255,255,0.24);border-radius:999px;">
+                <span style="width:7px;height:7px;border-radius:99px;background:#4C8DFF;"></span>
+                <span style="width:20px;height:4px;border-radius:99px;background:#64E6EC;"></span>
+              </div>
+              <div class="mini-card-bar" style="background:#131722;border:1px solid rgba(255,255,255,0.1);color:#E3E7F2;">
+                <span>#06070B Canvas</span>
+                <span style="color:#64E6EC;">Cobalt + Cyan</span>
+              </div>
+            </div>
+            <div class="theme-card-title-row">
+              <h3>Obsidian Glass</h3>
+              <span class="theme-active-tag">Active Theme</span>
+            </div>
+            <ul class="theme-specs">
+              <li>Midnight OLED luxury glass (<code class="mono">#06070B</code> / <code class="mono">#131722</code>)</li>
+              <li>Cobalt <code class="mono">#4C8DFF</code> &amp; Electric Cyan <code class="mono">#64E6EC</code> accents</li>
+              <li>Pitch-black capsule (<code class="mono">#000000</code>) with <code class="mono">0.8dp</code> top specular rim</li>
+            </ul>
+          </article>
+
+          <!-- Alabaster Gold -->
+          <article class="glass-card theme-card" data-theme-card="alabaster">
+            <div class="theme-mini-canvas mini-canvas-alabaster">
+              <div class="mini-island-pill" style="background:linear-gradient(180deg,#FCF9F2,#EAE2D3);border:1px solid rgba(156,125,86,0.45);border-radius:999px;">
+                <span style="width:7px;height:7px;border-radius:99px;background:#C86327;"></span>
+                <span style="width:20px;height:4px;border-radius:99px;background:#177B75;"></span>
+              </div>
+              <div class="mini-card-bar" style="background:#FCFBF7;border:1px solid rgba(155,135,106,0.28);color:#171614;">
+                <span>#F3EFE6 Ivory</span>
+                <span style="color:#C86327;">Copper + Teal</span>
+              </div>
+            </div>
+            <div class="theme-card-title-row">
+              <h3>Alabaster Gold</h3>
+              <span class="theme-active-tag">Select</span>
+            </div>
+            <ul class="theme-specs">
+              <li>Warm ceramic pearl (<code class="mono">#F3EFE6</code> / <code class="mono">#FCFBF7</code>) light UI</li>
+              <li>Brushed Copper <code class="mono">#C86327</code> &amp; Verdigris Teal <code class="mono">#177B75</code></li>
+              <li>Satin Champagne Pearl capsule with <code class="mono">1.1dp</code> bevel rim</li>
+            </ul>
+          </article>
+
+          <!-- Monolith Carbon -->
+          <article class="glass-card theme-card" data-theme-card="monolith">
+            <div class="theme-mini-canvas mini-canvas-monolith">
+              <div class="mini-island-pill" style="background:linear-gradient(180deg,#0D0D10,#040405);border:1px solid rgba(255,46,77,0.45);border-radius:7px;">
+                <span style="width:14px;height:3px;border-radius:99px;background:#878C99;"></span>
+                <span style="width:6px;height:6px;border-radius:99px;background:#FF2E4D;"></span>
+              </div>
+              <div class="mini-card-bar" style="background:#0E0E11;border:1px solid rgba(255,255,255,0.16);border-radius:6px;color:#F6F7F9;">
+                <span>#050506 Void</span>
+                <span style="color:#FF2E4D;">Signal Red</span>
+              </div>
+            </div>
+            <div class="theme-card-title-row">
+              <h3>Monolith Carbon</h3>
+              <span class="theme-active-tag">Select</span>
+            </div>
+            <ul class="theme-specs">
+              <li>Stealth tactical HUD (<code class="mono">#050506</code> / <code class="mono">#0E0E11</code> flat graphite)</li>
+              <li>Signal Crimson <code class="mono">#FF2E4D</code> &amp; Stark Silver <code class="mono">#E5EAF2</code></li>
+              <li>Precision squircle (<code class="mono">0.54x</code> corners) + idle telemetry pips</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- All Features -->
+    <section id="features" class="section">
+      <div class="container">
+        <div class="section-header">
+          <span class="overline">EXPERIENCE &amp; CAPABILITIES</span>
+          <h2 class="section-title">Every Feature Built Into the Capsule</h2>
+          <p class="section-subtitle">
+            Everything runs off a single deterministic coroutine state coordinator (<code class="mono">IslandStateCoordinator</code>)
+            persisted via Jetpack DataStore Preferences—keeping the dashboard stage and system overlay perfectly in sync.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <article class="glass-card feature-card">
+            <div class="feature-icon-box" style="background:color-mix(in srgb, var(--primary) 16%, transparent);color:var(--primary);">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+            </div>
+            <h3>Live Notifications &amp; Inline Reply</h3>
+            <p>
+              Compact heads-up pill displays sender avatar/app icon and title. Tap or swipe down to expand
+              the full message body, trigger notification actions, or send an inline <code class="mono">RemoteInput</code>
+              reply without leaving your current app.
+            </p>
+            <div class="feature-tag-row">
+              <span class="feature-tag">RemoteInput</span>
+              <span class="feature-tag">Action Buttons</span>
+              <span class="feature-tag">Deep Link Launch</span>
+            </div>
+          </article>
+
+          <article class="glass-card feature-card">
+            <div class="feature-icon-box" style="background:color-mix(in srgb, var(--secondary) 16%, transparent);color:var(--secondary);">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
+            </div>
+            <h3>Music &amp; Media Visualizer</h3>
+            <p>
+              Automatically syncs with active Android <code class="mono">MediaSession</code> playback—showing
+              album artwork, track &amp; artist metadata, animated 5-bar frequency waveform, live elapsed progress,
+              interactive seek scrubber, and Previous / Play-Pause / Next controls.
+            </p>
+            <div class="feature-tag-row">
+              <span class="feature-tag">MediaSession</span>
+              <span class="feature-tag">Live Waveform</span>
+              <span class="feature-tag">Seek Scrubber</span>
+            </div>
+          </article>
+
+          <article class="glass-card feature-card">
+            <div class="feature-icon-box" style="background:color-mix(in srgb, var(--warning) 16%, transparent);color:var(--warning);">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.57 3.58a1 1 0 0 1-.25 1.01l-2.2 2.2z"/></svg>
+            </div>
+            <h3>Calls, Timers &amp; Split-Pill Mode</h3>
+            <p>
+              Tracks incoming &amp; ongoing calls and countdown timers with tabular (<code class="mono">tnum</code>)
+              chronometers. When two activities run simultaneously (e.g., music + timer or call + media),
+              the capsule automatically splits into a primary pill + secondary detached mini-pill.
+            </p>
+            <div class="feature-tag-row">
+              <span class="feature-tag">Dual Split-Pill</span>
+              <span class="feature-tag">Live Chronometer</span>
+              <span class="feature-tag">Incoming Popups</span>
+            </div>
+          </article>
+
+          <article class="glass-card feature-card">
+            <div class="feature-icon-box" style="background:color-mix(in srgb, var(--positive) 16%, transparent);color:var(--positive);">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>
+            </div>
+            <h3>Charging, Bluetooth &amp; Ringer Popups</h3>
+            <p>
+              Instant transient popups for charger plug-in (<code class="mono">AC</code>, <code class="mono">USB</code>,
+              <code class="mono">Wireless</code>, fast-charging &amp; battery %), Bluetooth headphones/watches/speakers
+              with battery %, and ringer mode switches (<code class="mono">SILENT</code>, <code class="mono">VIBRATE</code>, <code class="mono">NORMAL</code>).
+            </p>
+            <div class="feature-tag-row">
+              <span class="feature-tag">2s–8s Auto-Dismiss</span>
+              <span class="feature-tag">Fast Charge Badge</span>
+              <span class="feature-tag">BT Battery %</span>
+            </div>
+          </article>
+
+          <article class="glass-card feature-card">
+            <div class="feature-icon-box" style="background:color-mix(in srgb, var(--violet) 16%, transparent);color:var(--violet);">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+            </div>
+            <h3>Smart Visibility &amp; Pin Preview Lab</h3>
+            <p>
+              <strong>Hide When Idle</strong> removes the capsule completely when nothing is active.
+              <strong>Hide in Landscape</strong> auto-collapses during fullscreen video &amp; games.
+              <strong>Show on Lockscreen</strong> keeps live events accessible, and <strong>Pin Preview</strong> locks
+              mock events on screen while you calibrate dimensions.
+            </p>
+            <div class="feature-tag-row">
+              <span class="feature-tag">Hide When Idle</span>
+              <span class="feature-tag">Hide in Landscape</span>
+              <span class="feature-tag">Pin Preview</span>
+            </div>
+          </article>
+
+          <article class="glass-card feature-card">
+            <div class="feature-icon-box" style="background:color-mix(in srgb, var(--danger) 16%, transparent);color:var(--danger);">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+            </div>
+            <h3>Privacy-First Accessibility Overlay</h3>
+            <p>
+              Uses <code class="mono">TYPE_ACCESSIBILITY_OVERLAY</code> exclusively to render the floating
+              capsule above the status bar and camera cutout across apps. Does not inspect, log, or transmit
+              screen text or passwords—100% offline &amp; open source.
+            </p>
+            <div class="feature-tag-row">
+              <span class="feature-tag">Zero Analytics</span>
+              <span class="feature-tag">No Internet Required</span>
+              <span class="feature-tag">Spring Physics</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Per-Feature Calibration & Gestures -->
+    <section id="calibration" class="section">
+      <div class="container">
+        <div class="section-header">
+          <span class="overline">PRECISION FIT &amp; GESTURES</span>
+          <h2 class="section-title">Per-Feature Size &amp; Cutout Calibration</h2>
+          <p class="section-subtitle">
+            Every Android phone has a unique camera punch-hole width and status-bar safe zone.
+            Customize <strong>Width</strong>, <strong>Height</strong>, and <strong>Expanded Width</strong>
+            independently for all 8 Island features—test it live on the simulator above!
+          </p>
+        </div>
+
+        <div class="split-grid">
+          <!-- Interactive Calibration Card -->
+          <div class="glass-card panel-card">
+            <div>
+              <span class="overline" style="margin-bottom:4px;">LIVE CALIBRATION TESTER</span>
+              <h3 style="margin:0;font-size:1.12rem;">
+                Calibrating: <span id="cal-feature-name" style="color:var(--primary);">Music</span>
+              </h3>
+            </div>
+
+            <div class="chip-row" role="group" aria-label="Select feature to calibrate">
+              <button class="feature-chip" type="button" data-cal-feature="IDLE">Idle Pill</button>
+              <button class="feature-chip" type="button" data-cal-feature="NOTIFICATION">Notification</button>
+              <button class="feature-chip active" type="button" data-cal-feature="MEDIA">Music</button>
+              <button class="feature-chip" type="button" data-cal-feature="CHARGING">Charging</button>
+              <button class="feature-chip" type="button" data-cal-feature="BLUETOOTH">Bluetooth</button>
+              <button class="feature-chip" type="button" data-cal-feature="TIMER">Timer</button>
+              <button class="feature-chip" type="button" data-cal-feature="CALL">Call</button>
+              <button class="feature-chip" type="button" data-cal-feature="RINGER">Silent / Ring</button>
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-row">
+                <div class="slider-label-row">
+                  <label for="cal-width">Compact Width (40–380 dp)</label>
+                  <span id="val-width" class="slider-badge tnum">190 dp</span>
+                </div>
+                <input id="cal-width" type="range" min="40" max="380" value="190" />
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-label-row">
+                  <label for="cal-height">Capsule Height (16–90 dp)</label>
+                  <span id="val-height" class="slider-badge tnum">34 dp</span>
+                </div>
+                <input id="cal-height" type="range" min="16" max="90" value="34" />
+              </div>
+
+              <div class="slider-row" id="cal-expanded-row">
+                <div class="slider-label-row">
+                  <label for="cal-expanded-width">Expanded Card Width (220–400 dp)</label>
+                  <span id="val-expanded-width" class="slider-badge tnum">346 dp</span>
+                </div>
+                <input id="cal-expanded-width" type="range" min="220" max="400" value="346" />
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-label-row">
+                  <label for="cal-offset-x">Horizontal Offset X (-160 to +160 dp)</label>
+                  <span id="val-offset-x" class="slider-badge tnum">0 dp</span>
+                </div>
+                <input id="cal-offset-x" type="range" min="-160" max="160" value="0" />
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-label-row">
+                  <label for="cal-offset-y">Vertical Offset Y (-20 to +80 dp)</label>
+                  <span id="val-offset-y" class="slider-badge tnum">8 dp</span>
+                </div>
+                <input id="cal-offset-y" type="range" min="-20" max="80" value="8" />
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-label-row">
+                  <label for="cal-corner-radius">Corner Radius (8–48 dp)</label>
+                  <span id="val-corner-radius" class="slider-badge tnum">26 dp</span>
+                </div>
+                <input id="cal-corner-radius" type="range" min="8" max="48" value="26" />
+              </div>
+            </div>
+
+            <button id="reset-calibration" class="btn btn-secondary" type="button">
+              Reset Calibration to Defaults
+            </button>
+          </div>
+
+          <!-- Fluid Gesture Controls + Smart Toggles -->
+          <div class="glass-card panel-card">
+            <div>
+              <span class="overline" style="margin-bottom:4px;">TACTILE INTERACTION</span>
+              <h3 style="margin:0;font-size:1.12rem;">Fluid Gesture Controls &amp; Haptics</h3>
+            </div>
+
+            <div class="gesture-list">
+              <div class="gesture-item">
+                <span class="gesture-action">Tap Pill</span>
+                <span class="gesture-desc">Expand compact pill into interactive card (or collapse)</span>
+              </div>
+              <div class="gesture-item">
+                <span class="gesture-action">Swipe Down</span>
+                <span class="gesture-desc">Expand compact capsule with haptic feedback</span>
+              </div>
+              <div class="gesture-item">
+                <span class="gesture-action">Swipe Up</span>
+                <span class="gesture-desc">Smoothly collapse expanded card back to capsule</span>
+              </div>
+              <div class="gesture-item">
+                <span class="gesture-action">Swipe Left / Right</span>
+                <span class="gesture-desc">Cycle through concurrent activities or dismiss transient popups</span>
+              </div>
+              <div class="gesture-item">
+                <span class="gesture-action">Long Press</span>
+                <span class="gesture-desc">Launch the source app directly via its PendingIntent</span>
+              </div>
+            </div>
+
+            <div class="tip-callout">
+              <strong>Popup Duration Control:</strong> Configure how long transient charging, Bluetooth, and ringer
+              popups stay visible anywhere from <code class="mono">2.0s</code> to <code class="mono">8.0s</code>, or
+              toggle individual feature modules on/off anytime.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download APK & GitHub Section -->
+    <section id="download" class="section">
+      <div class="container">
+        <div class="section-header">
+          <span class="overline">GET THE APP</span>
+          <h2 class="section-title">Download APK &amp; GitHub Repository</h2>
+          <p class="section-subtitle">
+            Install the pre-built Android APK directly on your device, deploy over ADB, or clone the open-source
+            repository to inspect and build from source.
+          </p>
+        </div>
+
+        <div class="download-grid">
+          <!-- APK Download Card -->
+          <div class="download-hero-box">
+            <div>
+              <span class="overline" style="margin-bottom:4px;">DIRECT ANDROID INSTALL</span>
+              <h3 style="margin:0 0 6px;font-size:1.35rem;">Dynamic Island for Android</h3>
+              <p style="margin:0;font-size:0.9rem;color:var(--text-muted);">
+                Package <code class="mono">com.dynamicisland.android</code> · Signed debug/release APK for Android 8.0+
+              </p>
+            </div>
+
+            <div class="apk-meta-grid">
+              <div class="apk-stat">
+                <div class="apk-stat-label">Version</div>
+                <div id="apk-version-val" class="apk-stat-val tnum">v1.0.0</div>
+              </div>
+              <div class="apk-stat">
+                <div class="apk-stat-label">Minimum OS</div>
+                <div class="apk-stat-val">Android 8.0 (API 26)</div>
+              </div>
+              <div class="apk-stat">
+                <div class="apk-stat-label">Target SDK / Size</div>
+                <div id="apk-size-val" class="apk-stat-val">API 35 · ~16 MB</div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-wrap:wrap;gap:12px;">
+              <a
+                id="apk-download-primary"
+                class="btn btn-positive"
+                href="https://github.com/Chaxupatel/dynamic-island/releases/latest"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M5 20h14v-2H5v2zm14-9h-4V3H9v8H5l7 7 7-7z"/>
+                </svg>
+                Download Latest APK
+              </a>
+
+              <a
+                id="apk-local-btn"
+                class="btn btn-primary"
+                href="../app/build/outputs/apk/debug/app-debug.apk"
+                download="dynamic-island-v1.0.0-debug.apk"
+                style="display:none;"
+              >
+                Direct Local APK
+              </a>
+
+              <a
+                class="btn btn-secondary"
+                href="https://github.com/Chaxupatel/dynamic-island"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                GitHub Repo · Chaxupatel/dynamic-island
+              </a>
+            </div>
+
+            <p id="apk-source-note" style="margin:0;font-size:0.8rem;color:var(--text-muted);">
+              Resolves the latest published <code class="mono">.apk</code> asset from GitHub Releases automatically.
+            </p>
+
+            <ol class="install-steps">
+              <li>Download the <code class="mono">.apk</code> file on your Android phone (or transfer via USB/ADB).</li>
+              <li>Tap the APK file and allow <strong>Install unknown apps</strong> for your browser or file manager.</li>
+              <li>Open <strong>Dynamic Island</strong> and enable <strong>Accessibility Overlay</strong> &amp; <strong>Notification Access</strong>.</li>
+            </ol>
+
+            <div class="tip-callout">
+              <strong>Android 13+ Restricted Settings Tip:</strong> If Xiaomi, Vivo, Oppo, Realme, or Samsung blocks
+              Accessibility/Notification access for a sideloaded APK, open <strong>Settings → Apps → Dynamic Island →
+              ⋮ → Allow restricted settings</strong>, then toggle the services back on.
+            </div>
+          </div>
+
+          <!-- Permissions & Build from Source Card -->
+          <div class="glass-card panel-card">
+            <div>
+              <span class="overline" style="margin-bottom:4px;">PERMISSIONS &amp; DEVELOPER BUILD</span>
+              <h3 style="margin:0;font-size:1.12rem;">Required Access &amp; CLI Install</h3>
+            </div>
+
+            <div class="permissions-table">
+              <div class="perm-row">
+                <div>
+                  <div class="perm-title">Accessibility Overlay</div>
+                  <div class="perm-sub">Renders capsule above status bar &amp; cutout across apps</div>
+                </div>
+                <span class="perm-badge req">Required</span>
+              </div>
+              <div class="perm-row">
+                <div>
+                  <div class="perm-title">Notification &amp; Media Access</div>
+                  <div class="perm-sub">Powers notifications, quick reply, music, calls &amp; timers</div>
+                </div>
+                <span class="perm-badge req">Required</span>
+              </div>
+              <div class="perm-row">
+                <div>
+                  <div class="perm-title">Bluetooth Devices (Android 12+)</div>
+                  <div class="perm-sub"><code class="mono">BLUETOOTH_CONNECT</code> for earbuds &amp; watch battery</div>
+                </div>
+                <span class="perm-badge opt">Optional</span>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:0.82rem;font-weight:700;margin-bottom:6px;color:var(--text-secondary);">
+                Install via ADB or Build from Source
+              </div>
+              <div class="code-block">
+                <button class="copy-btn" type="button" data-copy-target="build-commands">Copy</button>
+<pre id="build-commands" style="margin:0;">git clone https://github.com/Chaxupatel/dynamic-island.git
+cd dynamic-island
+./gradlew testDebugUnitTest
+./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture -->
+    <section id="architecture" class="section">
+      <div class="container">
+        <div class="section-header">
+          <span class="overline">ENGINEERING</span>
+          <h2 class="section-title">Clean Reactive Android Architecture</h2>
+          <p class="section-subtitle">
+            Built with Kotlin coroutines, <code class="mono">StateFlow</code>, Jetpack Compose inside an
+            Accessibility Service window host, and unit-tested priority transitions.
+          </p>
+        </div>
+
+        <div class="arch-grid">
+          <div class="glass-card arch-node">
+            <span class="arch-layer">SYSTEM LISTENERS</span>
+            <h4>IslandNotificationListenerService &amp; SystemEventsMonitor</h4>
+            <p>Captures notifications, <code class="mono">RemoteInput</code>, <code class="mono">MediaSession</code>, calls, timers, charging, Bluetooth &amp; ringer state.</p>
+          </div>
+
+          <div class="glass-card arch-node">
+            <span class="arch-layer">STATE MACHINE</span>
+            <h4>IslandStateCoordinator</h4>
+            <p>Deterministic <code class="mono">StateFlow</code> coordinator resolving priority, dual split-pill pairing, timeouts, and lock/landscape rules.</p>
+          </div>
+
+          <div class="glass-card arch-node">
+            <span class="arch-layer">PERSISTENCE &amp; THEME</span>
+            <h4>SettingsRepository &amp; Theme.kt</h4>
+            <p>Jetpack DataStore Preferences storing per-feature dimensions, offsets, visibility toggles, and the 3 synchronized <code class="mono">IslandPalette</code> worlds.</p>
+          </div>
+
+          <div class="glass-card arch-node">
+            <span class="arch-layer">COMPOSE OVERLAY</span>
+            <h4>IslandAccessibilityService &amp; DynamicIslandOverlay</h4>
+            <p>Hosts Compose UI on <code class="mono">TYPE_ACCESSIBILITY_OVERLAY</code> with spring animations, gesture detectors, and live waveform rendering.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <strong>Dynamic Island for Android</strong> · Built with Kotlin, Jetpack Compose &amp; Material 3
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/Chaxupatel/dynamic-island" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+        <a href="https://github.com/Chaxupatel/dynamic-island/releases/latest" target="_blank" rel="noopener noreferrer">APK Releases</a>
+        <a href="#features">Features</a>
+        <a href="#themes">Themes</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
+
